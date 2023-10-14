@@ -1,40 +1,63 @@
-import socket
-from time import time
+import argparse
 from scapy.all import *
-from scapy.layers.inet import IP, ICMP, UDP, TCP
-from scapy.layers.inet6 import IPv6, ICMPv6EchoRequest
+from scapy.layers.inet import IP, ICMP
 
-host = 'habrahabr.ru'
-port = 80
-max_hops = 10
-repeats_count = 1
 
-destination = socket.gethostbyname(host)
+class Traceroute:
+    MIN_SIZE = 28
 
-for ttl in range(1, max_hops + 1):
-    total_time = 0
-    src = None
-    for _ in range(repeats_count):
-        package = IP(dst=destination, ttl=ttl) / ICMP()
+    def __init__(self, host, timeout=1, delay=0, max_ttl=30, count=3, size=40):
+        self.host = socket.gethostbyname(host)
 
-        start = time.time()
-        reply = sr(package, timeout=2, verbose=False)
-        end = reply[0][0].answer.time
+        self.max_hops = max_ttl
+        self.repeats = count
 
-        total_time += end - start
+        self.timeout = timeout
+        self.delay = delay
 
-        answer = reply[0][0].answer
-        src = answer.src
-        package_type = answer[ICMP].type
-        # print((end - start) * 1000)
-        print(answer[ICMP].type)
-        # answer[ICMP].show()
-        # answer.show2()
-        # print(answer.src)
-        # print(answer.haslayer('ICMP'))
+        self.size = size
+        if size < Traceroute.MIN_SIZE:
+            raise ValueError('Packet size must be at least 28 bytes')
 
-    print(f'IP: {src}')
-    print(f'PING: {round(total_time * 1000 / repeats_count)} ms')
-    print()
-    if package_type == 0:
-        break
+    def trace(self):
+        for ttl in range(1, self.max_hops + 1):
+            src = None
+            pings = []
+            icmp_type = None
+            for _ in range(self.repeats):
+                start = time.time()
+                reply = self.get_ipv4_reply(self.get_ipv4_packet(ttl))
+                if not reply[0]:
+                    pings.append(None)
+                    continue
+                answer = reply[0][0].answer
+                end = answer.time
+                src = answer.src
+                icmp_type = answer[ICMP].type
+                pings.append(round((end - start) * 1000))
+                time.sleep(self.delay)
+            Traceroute.print_row(ttl, pings, src)
+            if icmp_type == 0:
+                break
+
+    def get_ipv4_packet(self, ttl):
+        return IP(dst=self.host, ttl=ttl, len=self.size) / ICMP()
+
+    def get_ipv4_reply(self, ipv4_packet):
+        return sr(ipv4_packet, timeout=self.timeout, verbose=False)
+
+    @staticmethod
+    def print_row(ttl, pings, src):
+        parts = [str(ttl).rjust(3)]
+        parts.extend(
+            (f'{str(ping).rjust(4)} ms' if ping is not None else '   *   ') for
+            ping in
+            pings)
+        parts.append(
+            str(src) if src is not None else 'Request timeout exceeded')
+        print('  '.join(parts))
+
+
+if __name__ == '__main__':
+    traceroute = Traceroute('habrahabr.ru', 2, 0, size=28)
+    traceroute.trace()
