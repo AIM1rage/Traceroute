@@ -22,6 +22,7 @@ class Traceroute:
             raise ValueError('Packet size must be at least 28 bytes')
 
     def trace(self):
+        print(f'Tracing the route to {self.host} with a maximum of 5 hops:')
         for ttl in range(1, self.max_ttl + 1):
             src = None
             pings = []
@@ -41,6 +42,7 @@ class Traceroute:
             Traceroute.print_row(ttl, pings, src)
             if icmp_type == 0:
                 break
+        print('Tracing completed.')
 
     def get_ipv4_packet(self, ttl):
         return IP(dst=self.host, ttl=ttl, len=self.size) / ICMP()
@@ -63,20 +65,20 @@ class Traceroute:
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(prog='traceroute',
                                      description='Traceroute traces network packet paths and identifies intermediate routers and their timings.')
-    parser.add_argument('host', nargs=1, type=str,
+    parser.add_argument('host', type=str,
                         help='host name or ip-address')
-    parser.add_argument('-ttl', nargs=1, default=30, type=int,
+    parser.add_argument('-ttl', default=30, type=int,
                         help='maximum time-to-live value')
-    parser.add_argument('-c', nargs=1, default=3, type=int,
+    parser.add_argument('-c', default=3, type=int,
                         help='requests count')
-    parser.add_argument('-d', nargs=1, default=0, type=int,
+    parser.add_argument('-d', default=0, type=int,
                         help='delay between requests in seconds')
-    parser.add_argument('-t', nargs=1, default=1, type=int,
+    parser.add_argument('-t', default=1, type=int,
                         help='request timeout in seconds')
-    parser.add_argument('-s', nargs=1, default=40, type=int,
+    parser.add_argument('-s', default=40, type=int,
                         help='packet size')
     args = parser.parse_args()
-    traceroute = Traceroute(host=args.host[0],
+    traceroute = Traceroute(host=args.host,
                             timeout=args.t,
                             delay=args.d,
                             max_ttl=args.ttl,
