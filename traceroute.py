@@ -11,7 +11,7 @@ class Traceroute:
     def __init__(self, host, timeout=1, delay=0, max_ttl=30, count=3, size=40):
         self.host = socket.gethostbyname(host)
 
-        self.max_hops = max_ttl
+        self.max_ttl = max_ttl
         self.count = count
 
         self.timeout = timeout
@@ -22,7 +22,7 @@ class Traceroute:
             raise ValueError('Packet size must be at least 28 bytes')
 
     def trace(self):
-        for ttl in range(1, self.max_hops + 1):
+        for ttl in range(1, self.max_ttl + 1):
             src = None
             pings = []
             icmp_type = None
@@ -79,6 +79,7 @@ if __name__ == '__main__':
     traceroute = Traceroute(host=args.host[0],
                             timeout=args.t,
                             delay=args.d,
+                            max_ttl=args.ttl,
                             count=args.c,
                             size=args.s)
     traceroute.trace()
