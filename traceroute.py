@@ -63,34 +63,17 @@ class Traceroute:
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(prog='traceroute',
                                      description='Traceroute traces network packet paths and identifies intermediate routers and their timings.')
-    parser.add_argument('host',
-                        nargs=1,
-                        type=str,
+    parser.add_argument('host', nargs=1, type=str,
                         help='host name or ip-address')
-    parser.add_argument('-ttl',
-                        nargs=1,
-                        default=30,
-                        type=int,
+    parser.add_argument('-ttl', nargs=1, default=30, type=int,
                         help='maximum time-to-live value')
-    parser.add_argument('-c',
-                        nargs=1,
-                        default=3,
-                        type=int,
+    parser.add_argument('-c', nargs=1, default=3, type=int,
                         help='requests count')
-    parser.add_argument('-d',
-                        nargs=1,
-                        default=0,
-                        type=int,
+    parser.add_argument('-d', nargs=1, default=0, type=int,
                         help='delay between requests in seconds')
-    parser.add_argument('-t',
-                        nargs=1,
-                        default=1,
-                        type=int,
+    parser.add_argument('-t', nargs=1, default=1, type=int,
                         help='request timeout in seconds')
-    parser.add_argument('-s',
-                        nargs=1,
-                        default=40,
-                        type=int,
+    parser.add_argument('-s', nargs=1, default=40, type=int,
                         help='packet size')
     args = parser.parse_args()
     traceroute = Traceroute(host=args.host[0],
