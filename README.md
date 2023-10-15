@@ -26,7 +26,7 @@ pip install scapy
 ## Usage
 
 ```
-python traceroute.py [-h] [-ttl TTL] [-c C] [-d D] [-t T] [-s S] host
+python traceroute.py [-h] [-seq SEQ] [-ttl TTL] [-c C] [-d D] [-t T] [-s S] host
 ```
 
 Perform a traceroute to a specified host.
@@ -38,6 +38,7 @@ Perform a traceroute to a specified host.
 ### Optional Arguments:
 
 - `-h, --help` - Show the help message and exit.
+- `-seq SEQ` - Additional sequence number (default: 0).
 - `-ttl TTL` - Maximum time-to-live value (default: 30).
 - `-c C` - Requests count (default: 3).
 - `-d D` - Delay between requests in seconds (default: 0).

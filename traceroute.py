@@ -7,8 +7,11 @@ class Traceroute:
     MIN_SIZE = 28
     MAX_SIZE = 65535
 
-    def __init__(self, host, timeout=1, delay=0, max_ttl=30, count=3, size=40):
+    def __init__(self, host,
+                 seq=0, timeout=1, delay=0, max_ttl=30, count=3, size=40):
         self.host = socket.gethostbyname(host)
+
+        self.seq = seq
 
         self.max_ttl = max_ttl
         self.count = count
@@ -17,11 +20,12 @@ class Traceroute:
         self.delay = delay
 
         self.size = size
-        if size < Traceroute.MIN_SIZE:
+        if not (Traceroute.MIN_SIZE <= size <= Traceroute.MAX_SIZE):
             raise ValueError('Packet size must be at least 28 bytes')
 
     def print_trace_table(self):
-        print(f'Tracing the route to {self.host} with a maximum of {self.max_ttl} hops:')
+        print(
+            f'Tracing the route to {self.host} with a maximum of {self.max_ttl} hops:')
         for row in self.get_trace_data():
             Traceroute.print_row(*row)
         print('Tracing completed.')
@@ -48,7 +52,7 @@ class Traceroute:
                 break
 
     def get_ipv4_packet(self, ttl):
-        return IP(dst=self.host, ttl=ttl, len=self.size) / ICMP()
+        return IP(dst=self.host, ttl=ttl, len=self.size) / ICMP(seq=self.seq)
 
     def get_ipv4_reply(self, ipv4_packet):
         return sr(ipv4_packet, timeout=self.timeout, verbose=False)
@@ -70,6 +74,8 @@ if __name__ == '__main__':
                                      description='Traceroute traces network packet paths and identifies intermediate routers and their timings.')
     parser.add_argument('host', type=str,
                         help='host name or ip-address')
+    parser.add_argument('-seq', default=0, type=int,
+                        help='additional sequence number')
     parser.add_argument('-ttl', default=30, type=int,
                         help='maximum time-to-live value')
     parser.add_argument('-c', default=3, type=int,
@@ -82,6 +88,7 @@ if __name__ == '__main__':
                         help='packet size')
     args = parser.parse_args()
     traceroute = Traceroute(host=args.host,
+                            seq=args.seq,
                             timeout=args.t,
                             delay=args.d,
                             max_ttl=args.ttl,
