@@ -53,7 +53,7 @@ python traceroute.py habrahabr.ru -ttl 10 -t 2
 ```
 
 ## Testing
-In order to test my code, you can run the script using the following command
+In order to test my code, you can run the script using the following command (Windows only!)
 
 ```
 python -m unittest -v traceroute_should.TracerouteTest
