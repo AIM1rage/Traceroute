@@ -1,5 +1,4 @@
 import argparse
-import sys
 from scapy.all import *
 from scapy.layers.inet import IP, ICMP
 
@@ -21,8 +20,13 @@ class Traceroute:
         if size < Traceroute.MIN_SIZE:
             raise ValueError('Packet size must be at least 28 bytes')
 
-    def trace(self):
-        print(f'Tracing the route to {self.host} with a maximum of 5 hops:')
+    def print_trace_table(self):
+        print(f'Tracing the route to {self.host} with a maximum of {self.max_ttl} hops:')
+        for row in self.get_trace_data():
+            Traceroute.print_row(*row)
+        print('Tracing completed.')
+
+    def get_trace_data(self):
         for ttl in range(1, self.max_ttl + 1):
             src = None
             pings = []
@@ -39,10 +43,9 @@ class Traceroute:
                 icmp_type = answer[ICMP].type
                 pings.append(round((end - start) * 1000))
                 time.sleep(self.delay)
-            Traceroute.print_row(ttl, pings, src)
+            yield ttl, pings, src
             if icmp_type == 0:
                 break
-        print('Tracing completed.')
 
     def get_ipv4_packet(self, ttl):
         return IP(dst=self.host, ttl=ttl, len=self.size) / ICMP()
@@ -84,4 +87,4 @@ if __name__ == '__main__':
                             max_ttl=args.ttl,
                             count=args.c,
                             size=args.s)
-    traceroute.trace()
+    traceroute.print_trace_table()
