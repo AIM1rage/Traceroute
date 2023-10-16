@@ -1,12 +1,13 @@
 # Traceroute
 
 This is a simple Python script that performs a traceroute to a given host using
-the Scapy library.
+the scapy and the ipwhois libraries
 
 ## Requirements
 
 - Python 3.x
-- Scapy library
+- scapy library
+- ipwhois library
 
 ## Installation
 
@@ -20,6 +21,7 @@ git clone https://github.com/AIM1rage/Traceroute.git
 
 ```
 pip install scapy
+pip install ipwhois
 ```
 
 
