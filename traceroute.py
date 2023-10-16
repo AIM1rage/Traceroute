@@ -27,8 +27,10 @@ class Traceroute:
     def print_trace_table(self):
         print(
             f'Tracing the route to {self.host} with a maximum of {self.max_ttl} hops:')
+        print()
         for row in self.get_trace_data():
             Traceroute.print_row(*row)
+        print()
         print('Tracing completed.')
 
     def get_trace_data(self):
