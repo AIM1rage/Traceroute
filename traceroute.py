@@ -10,6 +10,7 @@ class Traceroute:
     def __init__(self, host,
                  seq=42, timeout=1, delay=0, max_ttl=30, count=3, size=40):
         self.host = socket.gethostbyname(host)
+        self.name = host
 
         self.seq = seq
 
@@ -26,7 +27,7 @@ class Traceroute:
 
     def print_trace_table(self):
         print(
-            f'Tracing the route to {self.host} with a maximum of {self.max_ttl} hops:')
+            f'Tracing the route to {self.host} ({self.name}) with a maximum of {self.max_ttl} hops:')
         print()
         for row in self.get_trace_data():
             Traceroute.print_row(*row)
