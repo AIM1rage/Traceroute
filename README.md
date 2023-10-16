@@ -38,7 +38,7 @@ Perform a traceroute to a specified host.
 ### Optional Arguments:
 
 - `-h, --help` - Show the help message and exit.
-- `-seq SEQ` - Additional sequence number (default: 0).
+- `-seq SEQ` - Additional sequence number (default: 42).
 - `-ttl TTL` - Maximum time-to-live value (default: 30).
 - `-c C` - Requests count (default: 3).
 - `-d D` - Delay between requests in seconds (default: 0).

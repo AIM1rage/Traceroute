@@ -8,7 +8,7 @@ class Traceroute:
     MAX_SIZE = 65535
 
     def __init__(self, host,
-                 seq=0, timeout=1, delay=0, max_ttl=30, count=3, size=40):
+                 seq=42, timeout=1, delay=0, max_ttl=30, count=3, size=40):
         self.host = socket.gethostbyname(host)
 
         self.seq = seq
@@ -20,6 +20,7 @@ class Traceroute:
         self.delay = delay
 
         self.size = size
+        self.data = ('0' * (self.size - Traceroute.MIN_SIZE)).encode()
         if not (Traceroute.MIN_SIZE <= size <= Traceroute.MAX_SIZE):
             raise ValueError('Packet size must be at least 28 bytes')
 
@@ -50,8 +51,9 @@ class Traceroute:
                 break
 
     def get_ipv4_packet(self, ttl):
-        return IP(dst=self.host, ttl=ttl, len=self.size) / ICMP(type=8,
-                                                                seq=self.seq)
+        return IP(
+            dst=self.host, ttl=ttl, len=self.size) / ICMP(
+            type=8, seq=self.seq) / self.data
 
     def get_ipv4_reply(self, ipv4_packet):
         return sr1(ipv4_packet,
@@ -77,7 +79,7 @@ if __name__ == '__main__':
                                      description='Traceroute traces network packet paths and identifies intermediate routers and their timings.')
     parser.add_argument('host', type=str,
                         help='host name or ip-address')
-    parser.add_argument('-seq', default=0, type=int,
+    parser.add_argument('-seq', default=42, type=int,
                         help='additional sequence number')
     parser.add_argument('-ttl', default=30, type=int,
                         help='maximum time-to-live value')
