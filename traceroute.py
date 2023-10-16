@@ -1,4 +1,6 @@
 import argparse
+import socket
+
 from scapy.all import *
 from scapy.layers.inet import IP, ICMP
 
@@ -10,7 +12,10 @@ class Traceroute:
     def __init__(self, host,
                  seq=42, timeout=1, delay=0.1, max_ttl=30, count=3, size=40):
         self.host = socket.gethostbyname(host)
-        self.name = host
+        try:
+            self.name = socket.gethostbyaddr(self.host)[0]
+        except socket.herror:
+            self.name = self.host
 
         self.seq = seq
 
@@ -62,7 +67,7 @@ class Traceroute:
         return sr1(ipv4_packet,
                    timeout=self.timeout,
                    inter=self.delay,
-                   verbose=False,
+                   verbose=0,
                    retry=-3)
 
     @staticmethod
