@@ -44,7 +44,7 @@ Perform a traceroute to a specified host.
 - `-ttl TTL` - Maximum time-to-live value (default: 30).
 - `-c C` - Requests count (default: 3).
 - `-d D` - Delay between requests in seconds (default: 0).
-- `-t T` - Request timeout in seconds (default: 1).
+- `-t T` - Request timeout in seconds (default: 0.1).
 - `-s S` - Packet size (default: 40)
 
 ## Example

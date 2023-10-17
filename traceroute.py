@@ -11,7 +11,7 @@ class Traceroute:
     MAX_SIZE = 65535
 
     def __init__(self, host,
-                 seq=42, timeout=1, delay=0, max_ttl=30, count=3, size=40):
+                 seq=42, timeout=0.1, delay=0, max_ttl=30, count=3, size=40):
         self.host = socket.gethostbyname(host)
         self.name = Traceroute.get_host_name(self.host)
 
@@ -101,7 +101,7 @@ if __name__ == '__main__':
                         help='requests count')
     parser.add_argument('-d', default=0, type=float,
                         help='delay between requests in seconds')
-    parser.add_argument('-t', default=1, type=float,
+    parser.add_argument('-t', default=0.1, type=float,
                         help='request timeout in seconds')
     parser.add_argument('-s', default=40, type=int,
                         help='packet size')
