@@ -101,7 +101,7 @@ if __name__ == '__main__':
                         help='requests count')
     parser.add_argument('-d', default=0, type=float,
                         help='delay between requests in seconds')
-    parser.add_argument('-t', default=1, type=int,
+    parser.add_argument('-t', default=1, type=float,
                         help='request timeout in seconds')
     parser.add_argument('-s', default=40, type=int,
                         help='packet size')
