@@ -47,22 +47,25 @@ class Traceroute:
 
     def get_trace_data(self):
         for ttl in range(1, self.max_ttl + 1):
-            src = None
-            pings = []
-            icmp_type = None
-            for _ in range(self.count):
-                start = time.time()
-                reply = self.get_ipv4_reply(self.get_ipv4_packet(ttl))
-                if reply is None:
-                    pings.append(None)
-                    continue
-                end = reply.time
-                src = reply.src
-                icmp_type = reply[ICMP].type
-                pings.append((round((end - start) * 1000), src))
+            pings, icmp_type = self.get_fixed_ttl_data(ttl)
             yield ttl, pings
             if icmp_type == 0:
                 break
+
+    def get_fixed_ttl_data(self, ttl):
+        pings = []
+        icmp_type = None
+        for _ in range(self.count):
+            start = time.time()
+            reply = self.get_ipv4_reply(self.get_ipv4_packet(ttl))
+            if reply is None:
+                pings.append(None)
+                continue
+            end = reply.time
+            src = reply.src
+            icmp_type = reply[ICMP].type
+            pings.append((round((end - start) * 1000), src))
+        return pings, icmp_type
 
     def get_ipv4_packet(self, ttl):
         return IP(
@@ -74,8 +77,7 @@ class Traceroute:
                    timeout=self.timeout,
                    inter=self.delay,
                    verbose=0,
-                   retry=-3,
-                   threaded=True)
+                   retry=-3)
 
     @staticmethod
     def print_row(ttl, pings):
@@ -83,8 +85,6 @@ class Traceroute:
         parts.extend((f'{ping[0]} ms ({ping[1]})'
                       if ping is not None
                       else '*') for ping in pings)
-        # parts.append(
-        #     f'{src} ({Traceroute.get_host_name(src)})' if src is not None else 'Request timeout exceeded')
         print('  '.join(parts))
 
     @staticmethod
