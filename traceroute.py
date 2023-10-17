@@ -11,9 +11,10 @@ class Traceroute:
     MAX_SIZE = 65535
 
     def __init__(self, host,
-                 seq=42, timeout=0.1, delay=0, max_ttl=30, count=3, size=40):
-        self.host = socket.gethostbyname(host)
-        self.name = Traceroute.get_host_name(self.host)
+                 seq=42, timeout=0.5, delay=0, max_ttl=30, count=3, size=40):
+        self.ip_address = socket.gethostbyname(host)
+        self.host_name = Traceroute.get_host_name(self.ip_address)
+        self.host_location = Traceroute.get_host_location(self.ip_address)
 
         self.seq = seq
 
@@ -29,8 +30,15 @@ class Traceroute:
             raise ValueError('Packet size must be at least 28 bytes')
 
     def print_trace_table(self):
-        print(
-            f'Tracing the route to {self.host} ({self.name}) with a maximum of {self.max_ttl} hops:')
+        if self.host_name is not None:
+            print(
+                f'Tracing the route to {self.ip_address} ({self.host_name}) with a maximum of {self.max_ttl} hops:')
+        else:
+            print(
+                f'Tracing the route to {self.ip_address} with a maximum of {self.max_ttl} hops:')
+        if self.host_location is not None:
+            print(f'Location:')
+            print(self.host_location)
         print()
         for row in self.get_trace_data():
             Traceroute.print_row(*row)
@@ -51,14 +59,14 @@ class Traceroute:
                 end = reply.time
                 src = reply.src
                 icmp_type = reply[ICMP].type
-                pings.append(round((end - start) * 1000))
-            yield ttl, pings, src
+                pings.append((round((end - start) * 1000), src))
+            yield ttl, pings
             if icmp_type == 0:
                 break
 
     def get_ipv4_packet(self, ttl):
         return IP(
-            dst=self.host, ttl=ttl, len=self.size) / ICMP(
+            dst=self.ip_address, ttl=ttl, len=self.size) / ICMP(
             type=8, seq=self.seq) / self.data
 
     def get_ipv4_reply(self, ipv4_packet):
@@ -66,26 +74,32 @@ class Traceroute:
                    timeout=self.timeout,
                    inter=self.delay,
                    verbose=0,
-                   retry=-3)
+                   retry=-3,
+                   threaded=True)
 
     @staticmethod
-    def print_row(ttl, pings, src):
+    def print_row(ttl, pings):
         parts = [str(ttl).rjust(3)]
-        parts.extend(
-            (f'{str(ping).rjust(4)} ms' if ping is not None else '   *   ') for
-            ping in
-            pings)
-        parts.append(
-            f'{src} ({Traceroute.get_host_name(src)})' if src is not None else 'Request timeout exceeded')
+        parts.extend((f'{ping[0]} ms ({ping[1]})'
+                      if ping is not None
+                      else '*') for ping in pings)
+        # parts.append(
+        #     f'{src} ({Traceroute.get_host_name(src)})' if src is not None else 'Request timeout exceeded')
         print('  '.join(parts))
 
     @staticmethod
-    def get_host_name(host):
+    def get_host_name(ip_address):
         try:
-            return IPWhois(
-                host).lookup_whois()['nets'][0]['address'].replace('\n', ', ')
+            return socket.gethostbyaddr(ip_address)[0]
+        except socket.herror:
+            return None
+
+    @staticmethod
+    def get_host_location(ip_address):
+        try:
+            return IPWhois(ip_address).lookup_whois()['nets'][0]['address']
         except exceptions.IPDefinedError:
-            return host
+            return None
 
 
 if __name__ == '__main__':
@@ -101,7 +115,7 @@ if __name__ == '__main__':
                         help='requests count')
     parser.add_argument('-d', default=0, type=float,
                         help='delay between requests in seconds')
-    parser.add_argument('-t', default=0.1, type=float,
+    parser.add_argument('-t', default=0.5, type=float,
                         help='request timeout in seconds')
     parser.add_argument('-s', default=40, type=int,
                         help='packet size')

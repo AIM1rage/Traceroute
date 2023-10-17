@@ -7,7 +7,6 @@ the scapy and the ipwhois libraries
 
 - Python 3.x
 - scapy library
-- ipwhois library
 
 ## Installation
 
