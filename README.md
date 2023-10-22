@@ -1,7 +1,7 @@
 # Traceroute
 
 This is a simple Python script that performs a traceroute to a given host using
-the scapy and the ipwhois libraries
+the scapy and the ipwhois libraries (IPv6 supported)
 
 ## Requirements
 

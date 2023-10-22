@@ -3,7 +3,7 @@ import argparse
 from ipwhois import IPWhois, exceptions
 from scapy.all import *
 from scapy.layers.inet import IP, ICMP
-from scapy.layers.inet6 import IPv6, ICMPv6EchoRequest
+from scapy.layers.inet6 import *
 
 
 class Traceroute:
@@ -27,8 +27,7 @@ class Traceroute:
             self.size, self.data = Traceroute.get_data(
                 size, Traceroute.IPV6_MIN_SIZE, Traceroute.IPV6_MAX_SIZE)
 
-        # self.host_location = Traceroute.get_host_location(self.ip_address)
-        self.host_location = 'home'
+        self.host_location = Traceroute.get_host_location(self.ip_address)
 
         self.seq = seq
 
@@ -52,14 +51,14 @@ class Traceroute:
 
     def get_trace_data(self):
         for ttl in range(1, self.max_ttl + 1):
-            pings, icmp_type = self.get_fixed_ttl_data(ttl)
+            pings, icmp_reply_type = self.get_fixed_ttl_data(ttl)
             yield ttl, pings
-            if icmp_type in (0, 129):
+            if icmp_reply_type in (0, 129):
                 break
 
     def get_fixed_ttl_data(self, ttl):
         pings = []
-        icmp_type = None
+        icmp_reply_type = None
         for _ in range(self.count):
             start = time.time()
             reply = self.get_reply(self.get_packet(ttl))
@@ -68,11 +67,9 @@ class Traceroute:
                 continue
             end = reply.time
             src = reply.src
-            icmp_type = reply.layers()[1].type
-            if self.ip_version == 6:
-                icmp_type = icmp_type.default
+            icmp_reply_type = self.get_reply_type(reply)
             pings.append((round((end - start) * 1000), src))
-        return pings, icmp_type
+        return pings, icmp_reply_type
 
     def get_packet(self, ttl):
         if self.ip_version == 4:
@@ -81,7 +78,7 @@ class Traceroute:
                 type=8, seq=self.seq) / self.data
         return IPv6(
             dst=self.ip_address, hlim=ttl, plen=self.size) / ICMPv6EchoRequest(
-            type=128, seq=self.seq) / self.data
+            type=128, seq=self.seq, data=self.data)
 
     def get_reply(self, ip_packet):
         return sr1(ip_packet,
@@ -89,6 +86,14 @@ class Traceroute:
                    inter=self.delay,
                    verbose=0,
                    retry=-3)
+
+    def get_reply_type(self, reply):
+        if self.ip_version == 4:
+            return reply[ICMP].type
+        try:
+            return reply[ICMPv6TimeExceeded].type
+        except IndexError:
+            return reply[ICMPv6EchoReply].type
 
     @staticmethod
     def print_row(ttl, pings):
@@ -102,7 +107,7 @@ class Traceroute:
     def get_host_location(ip_address):
         try:
             return IPWhois(ip_address).lookup_whois()['nets'][0]['address']
-        except exceptions.IPDefinedError:
+        except (exceptions.IPDefinedError, exceptions.ASNRegistryError):
             return None
 
     @staticmethod
@@ -110,7 +115,7 @@ class Traceroute:
         if not (min_size <= size <= max_size):
             raise ValueError(
                 f'Packet size must be between {min_size} and {max_size}')
-        data = ('0' * (size - min_size)).encode()
+        data = ('1' * (size - min_size)).encode()
         return size, data
 
 
