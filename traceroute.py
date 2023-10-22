@@ -13,11 +13,12 @@ class Traceroute:
     IPV6_MIN_SIZE = 8
     IPV6_MAX_SIZE = 65535
 
-    def __init__(self, host,
+    def __init__(self, host, src=None,
                  seq=42, timeout=0.5, delay=0, max_ttl=30, count=3, size=40):
         self.host = host
+        self.src = src
         self.ip_address = socket.getaddrinfo(
-            host, 80, proto=socket.IPPROTO_TCP)[0][-1][0]
+            host, None, proto=socket.IPPROTO_TCP)[0][-1][0]
         if '.' in self.ip_address:
             self.ip_version = 4
             self.size, self.data = Traceroute.get_data(
@@ -61,6 +62,7 @@ class Traceroute:
         icmp_reply_type = None
         for _ in range(self.count):
             start = time.time()
+            packet = self.get_packet(ttl)
             reply = self.get_reply(self.get_packet(ttl))
             if reply is None:
                 pings.append(None)
@@ -73,11 +75,11 @@ class Traceroute:
 
     def get_packet(self, ttl):
         if self.ip_version == 4:
-            return IP(
-                dst=self.ip_address, ttl=ttl, len=self.size) / ICMP(
+            return IP(dst=self.ip_address, src=self.src,
+                      ttl=ttl, len=self.size) / ICMP(
                 type=8, seq=self.seq) / self.data
-        return IPv6(
-            dst=self.ip_address, hlim=ttl, plen=self.size) / ICMPv6EchoRequest(
+        return IPv6(dst=self.ip_address, src=self.src,
+                    hlim=ttl, plen=self.size) / ICMPv6EchoRequest(
             type=128, seq=self.seq, data=self.data)
 
     def get_reply(self, ip_packet):
@@ -124,6 +126,8 @@ if __name__ == '__main__':
                                      description='Traceroute traces network packet paths and identifies intermediate routers and their timings.')
     parser.add_argument('host', type=str,
                         help='host name or ip-address')
+    parser.add_argument('-src', default=None, type=str,
+                        help='source address')
     parser.add_argument('-seq', default=42, type=int,
                         help='additional sequence number')
     parser.add_argument('-ttl', default=30, type=int,
@@ -138,6 +142,7 @@ if __name__ == '__main__':
                         help='packet size')
     args = parser.parse_args()
     traceroute = Traceroute(host=args.host,
+                            src=args.src,
                             seq=args.seq,
                             timeout=args.t,
                             delay=args.d,
