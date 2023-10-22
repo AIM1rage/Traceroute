@@ -62,7 +62,6 @@ class Traceroute:
         icmp_reply_type = None
         for _ in range(self.count):
             start = time.time()
-            packet = self.get_packet(ttl)
             reply = self.get_reply(self.get_packet(ttl))
             if reply is None:
                 pings.append(None)
