@@ -1,20 +1,34 @@
 import argparse
-import socket
 
+from ipwhois import IPWhois, exceptions
 from scapy.all import *
 from scapy.layers.inet import IP, ICMP
-from ipwhois import IPWhois, exceptions
+from scapy.layers.inet6 import IPv6, ICMPv6EchoRequest
 
 
 class Traceroute:
-    MIN_SIZE = 28
-    MAX_SIZE = 65535
+    IPV4_MIN_SIZE = 28
+    IPV4_MAX_SIZE = 65535
+
+    IPV6_MIN_SIZE = 8
+    IPV6_MAX_SIZE = 65535
 
     def __init__(self, host,
                  seq=42, timeout=0.5, delay=0, max_ttl=30, count=3, size=40):
-        self.ip_address = socket.gethostbyname(host)
-        self.host_name = Traceroute.get_host_name(self.ip_address)
-        self.host_location = Traceroute.get_host_location(self.ip_address)
+        self.host = host
+        self.ip_address = socket.getaddrinfo(
+            host, 80, proto=socket.IPPROTO_TCP)[0][-1][0]
+        if '.' in self.ip_address:
+            self.ip_version = 4
+            self.size, self.data = Traceroute.get_data(
+                size, Traceroute.IPV4_MIN_SIZE, Traceroute.IPV4_MAX_SIZE)
+        else:
+            self.ip_version = 6
+            self.size, self.data = Traceroute.get_data(
+                size, Traceroute.IPV6_MIN_SIZE, Traceroute.IPV6_MAX_SIZE)
+
+        # self.host_location = Traceroute.get_host_location(self.ip_address)
+        self.host_location = 'home'
 
         self.seq = seq
 
@@ -24,18 +38,9 @@ class Traceroute:
         self.timeout = timeout
         self.delay = delay
 
-        self.size = size
-        self.data = ('0' * (self.size - Traceroute.MIN_SIZE)).encode()
-        if not (Traceroute.MIN_SIZE <= size <= Traceroute.MAX_SIZE):
-            raise ValueError('Packet size must be at least 28 bytes')
-
     def print_trace_table(self):
-        if self.host_name is not None:
-            print(
-                f'Tracing the route to {self.ip_address} ({self.host_name}) with a maximum of {self.max_ttl} hops:')
-        else:
-            print(
-                f'Tracing the route to {self.ip_address} with a maximum of {self.max_ttl} hops:')
+        print(
+            f'Tracing the route to {self.ip_address} ({self.host}) with a maximum of {self.max_ttl} hops:')
         if self.host_location is not None:
             print(f'Location:')
             print(self.host_location)
@@ -49,7 +54,7 @@ class Traceroute:
         for ttl in range(1, self.max_ttl + 1):
             pings, icmp_type = self.get_fixed_ttl_data(ttl)
             yield ttl, pings
-            if icmp_type == 0:
+            if icmp_type in (0, 129):
                 break
 
     def get_fixed_ttl_data(self, ttl):
@@ -57,23 +62,29 @@ class Traceroute:
         icmp_type = None
         for _ in range(self.count):
             start = time.time()
-            reply = self.get_ipv4_reply(self.get_ipv4_packet(ttl))
+            reply = self.get_reply(self.get_packet(ttl))
             if reply is None:
                 pings.append(None)
                 continue
             end = reply.time
             src = reply.src
-            icmp_type = reply[ICMP].type
+            icmp_type = reply.layers()[1].type
+            if self.ip_version == 6:
+                icmp_type = icmp_type.default
             pings.append((round((end - start) * 1000), src))
         return pings, icmp_type
 
-    def get_ipv4_packet(self, ttl):
-        return IP(
-            dst=self.ip_address, ttl=ttl, len=self.size) / ICMP(
-            type=8, seq=self.seq) / self.data
+    def get_packet(self, ttl):
+        if self.ip_version == 4:
+            return IP(
+                dst=self.ip_address, ttl=ttl, len=self.size) / ICMP(
+                type=8, seq=self.seq) / self.data
+        return IPv6(
+            dst=self.ip_address, hlim=ttl, plen=self.size) / ICMPv6EchoRequest(
+            type=128, seq=self.seq) / self.data
 
-    def get_ipv4_reply(self, ipv4_packet):
-        return sr1(ipv4_packet,
+    def get_reply(self, ip_packet):
+        return sr1(ip_packet,
                    timeout=self.timeout,
                    inter=self.delay,
                    verbose=0,
@@ -88,18 +99,19 @@ class Traceroute:
         print('  '.join(parts))
 
     @staticmethod
-    def get_host_name(ip_address):
-        try:
-            return socket.gethostbyaddr(ip_address)[0]
-        except socket.herror:
-            return None
-
-    @staticmethod
     def get_host_location(ip_address):
         try:
             return IPWhois(ip_address).lookup_whois()['nets'][0]['address']
         except exceptions.IPDefinedError:
             return None
+
+    @staticmethod
+    def get_data(size, min_size, max_size):
+        if not (min_size <= size <= max_size):
+            raise ValueError(
+                f'Packet size must be between {min_size} and {max_size}')
+        data = ('0' * (size - min_size)).encode()
+        return size, data
 
 
 if __name__ == '__main__':
