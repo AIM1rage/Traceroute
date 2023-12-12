@@ -98,7 +98,10 @@ class Tracer:
         response_time = ('*' if ping is None else str(ping) + ' ms').ljust(7)
         if self.verbose:
             asn = Tracer.get_autonomous_system_number(src)
-            asn = asn if asn is not None else '*'
+            if src is None:
+                asn = '*'
+            elif asn is None:
+                asn = 'NA'
             print(f'{number}  {ip}  {response_time}  {asn}')
         else:
             print(f'{number}  {ip}  {response_time}')
