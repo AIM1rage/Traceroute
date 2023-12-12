@@ -20,15 +20,13 @@ git clone https://github.com/AIM1rage/Traceroute.git
 2. Install the required dependencies:
 
 ```
-pip install scapy
-pip install ipwhois
+pip install -r requirements.txt
 ```
-
 
 ## Usage
 
 ```
-python traceroute.py [-h] [-src SRC] [-seq SEQ] [-ttl TTL] [-c C] [-d D] [-t T] [-s S] host
+python traceroute.py [-t] [-n] [-v] host
 ```
 
 Perform a traceroute to a specified host.
@@ -40,24 +38,25 @@ Perform a traceroute to a specified host.
 ### Optional Arguments:
 
 - `-h, --help` - Show the help message and exit.
-- `-src` - Source address (default: [your local address])
-- `-seq SEQ` - Additional sequence number (default: 42).
-- `-ttl TTL` - Maximum time-to-live value (default: 30).
-- `-c C` - Requests count (default: 3).
-- `-d D` - Delay between requests in seconds (default: 0).
-- `-t T` - Request timeout in seconds (default: 0.5).
-- `-s S` - Packet size (default: 40)
+
+
+- `-t` — timeout for waiting for a response (default is 2s)
+- `-n` — maximum number of requests
+- `-v` — output the autonomous system number for each IP address
 
 ## Example
 
-To trace the route to public Google DNS `8.8.8.8` with optional arguments: ttl = 10 and t = 2 (seconds):
+To trace the route to public Google DNS `8.8.8.8` with optional arguments:
+ttl = 10 and t = 2 (seconds):
 
 ```
-python traceroute.py 8.8.8.8 -ttl 10 -t 0.3
+python traceroute.py 8.8.8.8 -n 10 -t 0.3
 ```
 
 ## Testing
-In order to test my code, you can run the script using the following command (Windows only!)
+
+In order to test my code, you can run the script using the following command (
+Windows only!)
 
 ```
 python -m unittest -v traceroute_should.TracerouteTest
